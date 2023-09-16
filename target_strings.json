@@ -1,0 +1,10 @@
+{
+    "area_test_target": "https://www.google.com/generate_204",
+    "area_verify_target": "https://www.baidu.com/",
+    "aes256_key_target": "Sv@H,+SV-U*VEjCW,n7WA-@n}j3;U;XF",
+    "aes256_iv_target": "1%[OB.<YSw?)o:rQ",
+    "server_host_target": "https://service.rhythnet.com",
+    "game_config_address_target": "https://rizlineassetstore.pigeongames.cn/configs/game_config.json",
+    "xsolla_purchase_address_target": "https://rizline.xsollasitebuilder.com?user-id=",
+    "rsa_public_key_target": "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAwC8TAtZJ4Dhk5XUxSNmh9eqE1uq1lD6Our/iRa397G5w2NEkPa8trhBfs4M5mwH0KEeUNQogyN8b1Qn82QahluFTSpEfILdIhbKXYrV1K2s5hbGdC/x8i3ZWmr/kGsDrTysXKO67z8Kl4cZ8SZPRtjv3HGNV7jMOpBnRg96UCWRTbqAsZbKqMNCAwuduPCo4uGvObrMIhvZMf7l6TSmSrEaWrw2yF+O9ytwUx5nX5/WiKUvLJgGH9wRZlphIv/Tx5MZ058J3ioGHqmtrK/vdiNmwYk4fACr3karB2zC5C7EgUE/36SIMe11+E2U20gMKfqhQuGTmcmFN63eI8qlTigX9fj5VJziwCBLH3TZ4B5gUGEA7FZIEQ4jWm9fznisLWfC3nreMhWmingDZHAFKluTtVArJo5PVvO/ZsAdfpKD34N5oQrEG+8QvgHGmkuAp8T05XAH/olQdqLPMUXYoI8GeVddlp9f9P52tcQu4+Zt5yUT6yNFuUnjHB4I4L2j1lxfiAPOJW4MPkYHnx/5D8kv3FLRMpQSNSg9C2e2vqMSZ30tqUbUdGyqVV2K5lfo/MhCYygAzElb9DX22ITuVDpwEZXSsr1TiQyB+cPQUaF8rnixYSbDAKQjhxNmfdx0qTJ1TB+UT26txpIzL465Q+BqWtXmrc28Sbz/6GHOaw1cCAwEAAQ=="
+}

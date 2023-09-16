@@ -1,0 +1,267 @@
+import { Button, VerticalBox, LineEdit, TabWidget, TextEdit, GridBox, GroupBox, AboutSlint} from "std-widgets.slint";
+
+export component PackageSelectUIGroup inherits Rectangle {
+    in-out property <string> package_selected_path <=> package_path.text;
+    callback select_package_btn_click <=> select_package_btn.clicked;
+    callback start_edit_btn_click <=> start_edit_btn.clicked;
+
+    Text {
+        text: "请先选择包体：";
+        y: 140px;
+        x: 400px;
+        font-size: 20px;
+    }
+
+    package_path:=LineEdit {
+        width: 320px;
+        y: 200px;
+        x: 280px;
+        text: "等待选择...";
+    }
+
+    select_package_btn:=Button {
+        text: "选择";
+        y: 200px;
+        x: 620px;
+    }
+
+    start_edit_btn:=Button {
+        text: "开始编辑";
+        primary: true;
+        y: 280px;
+        x: 430px;
+    }
+}
+
+export component PackageEditUIGroup inherits Rectangle {
+    in-out property <string> rsa_public_key_text: "RSA验证公钥读取失败";
+    in-out property <string> area_test_text: "读取失败";
+    in-out property <string> area_verify_text: "读取失败";
+    in-out property <string> aes256_key_text: "N/A";
+    in-out property <string> aes256_iv_text: "N/A";
+    in-out property <string> server_host_text: "N/A";
+    in-out property <string> game_config_address_text: "N/A";
+    in-out property <string> xsolla_purchase_address_text: "N/A";
+
+    callback output_package_click <=> output_package_btn.clicked;
+
+    Text {
+        text: "RSA验证公钥：";
+        y: 40px;
+        x: 120px;
+        font-size: 16px;
+    }
+
+    rsa_public_key_textedit:=TextEdit {
+        text: rsa-public-key-text;
+        y: 90px;
+        x: 45px;
+        height: 350px;
+        width: 250px;
+    }
+    
+    Text {
+        text: "区域检测URL：";
+        y: 40px;
+        x: 340px;
+        font-size: 16px;
+    }
+
+    area_test_lineedit:=LineEdit {
+        text: area-test-text;
+        y: 35px;
+        x: 460px;
+        width: 200px;
+        font-size: 16px;
+    }
+
+    Text {
+        text: "区域验证URL：";
+        y: 80px;
+        x: 340px;
+        font-size: 16px;
+    }
+
+    area_verify_lineedit:=LineEdit {
+        text: area-verify-text;
+        y: 75px;
+        x: 460px;
+        width: 200px;
+        font-size: 16px;
+    }
+
+    Text {
+        text: "AES-256 KEY：";
+        y: 120px;
+        x: 340px;
+        font-size: 16px;
+    }
+
+    aes256_key_lineedit:=LineEdit {
+        text: aes256-key-text;
+        y: 115px;
+        x: 460px;
+        width: 200px;
+        font-size: 16px;
+    }
+    
+    Text {
+        text: "AES-256 IV：";
+        y: 160px;
+        x: 340px;
+        font-size: 16px;
+    }
+
+    aes256_iv_lineedit:=LineEdit {
+        text: aes256-iv-text;
+        y: 155px;
+        x: 460px;
+        width: 200px;
+        font-size: 16px;
+    }
+
+    Rectangle {
+        background: black;
+        width: 320px;
+        height: 2px;
+        y: 220px;
+        x: 340px;
+    }
+
+    Text {
+        text: "服务器Host：";
+        y: 260px;
+        x: 340px;
+        font-size: 16px;
+    }
+
+    server_host_lineedit:=LineEdit {
+        text: server-host-text;
+        y: 255px;
+        x: 460px;
+        width: 200px;
+        font-size: 16px;
+    }
+
+    Text {
+        text: "配置文件地址：";
+        y: 300px;
+        x: 340px;
+        font-size: 16px;
+    }
+
+    game_config_lineedit:=LineEdit {
+        text: game-config-address-text;
+        y: 295px;
+        x: 460px;
+        width: 200px;
+        font-size: 16px;
+    }
+
+    Text {
+        text: "内购处理地址：";
+        y: 340px;
+        x: 340px;
+        font-size: 16px;
+    }
+
+    xsolla_purchase_address:=LineEdit {
+        text: xsolla-purchase-address_text;
+        y: 335px;
+        x: 460px;
+        width: 200px;
+        font-size: 16px;
+    }
+
+    output_package_btn:=Button {
+        text: "导出修改后的包体";
+        primary: true;
+        y: 420px;
+        x: 800px;
+    }
+}
+
+export component UIMainWindow inherits Window {
+    min-width: 950px;
+    min-height: 500px;
+    title: "RizPackageTools   一键修改, 快速部署!";
+    no-frame: false;
+
+    in-out property <bool> show_package_select_ui_group: true;
+
+    in-out property <bool> show_edit_package_ui_group: false;
+
+    in-out property <string> rsa_public_key_text <=> package_edit_ui_group.rsa_public_key_text;
+    in-out property <string> area_test_text <=> package_edit_ui_group.area_test_text;
+    in-out property <string> area_verify_text <=> package_edit_ui_group.area_verify_text;
+    in-out property <string> aes256_key_text <=> package_edit_ui_group.aes256_key_text;
+    in-out property <string> aes256_iv_text <=> package_edit_ui_group.aes256_iv_text;
+    in-out property <string> server_host_text <=> package_edit_ui_group.server_host_text;
+    in-out property <string> game_config_address_text <=> package_edit_ui_group.game_config_address_text;
+    in-out property <string> xsolla_purchase_address <=> package_edit_ui_group.xsolla_purchase_address_text;
+
+    in-out property <string> package_selected_path_text <=> package_select_ui_group.package_selected_path;
+
+    in-out property <string> about_versiontext_property: "v0.1.0   https://github.com/osp-project/RizPackageTools";
+
+    callback output_package_click <=> package_edit_ui_group.output_package_click;
+
+    callback select_package_btn_click <=> package_select_ui_group.select_package_btn_click;
+    callback start_edit_btn_click <=> package_select_ui_group.start_edit_btn_click;
+
+    TabWidget {
+        Tab {
+            title: "主页";
+            package_select_ui_group:=PackageSelectUIGroup {
+                x: !show-package-select-ui-group ? 999999999px: 0px;
+                y: !show-package-select-ui-group ? 999999999px: 0px;
+            }
+
+            package_edit_ui_group:=PackageEditUIGroup {
+                x: !show_edit_package_ui_group ? 999999999px: 0px;
+                y: !show_edit_package_ui_group ? 999999999px: 0px;
+            }
+        }
+        Tab {
+            title: "设置";
+
+            Text{
+                text: "暂无可设置项目";
+                font-size: 20px;
+            }
+        }
+        Tab {
+            title: "关于";
+
+            Text{
+                text: "RizPackageTools";
+                y: 100px;
+                font-size: 24px;
+            }
+
+            about_versiontext:=Text{
+                text: about-versiontext-property;
+                y: 160px;
+                font-size: 16px;
+            }
+
+            Text{
+                text: "RizPackageTools是由Searchstars开发的一款工具类软件，其属于osp-project，作用是用来修改某游戏的包体，提升一些项目的开发效率，并快速进行测试";
+                y: 210px;
+                font-size: 12px;
+            }
+
+            Text{
+                text: "本软件永久免费，并使用GPL-v3协议开源，若您是通过购买得到此软件，请立即退款并采取您认为正确的任何报复措施";
+                y: 250px;
+                font-size: 14px;
+            }
+
+            AboutSlint { 
+                width: 35%;
+                height: 35%;
+                y: 300px;
+            }
+        }
+    }
+}

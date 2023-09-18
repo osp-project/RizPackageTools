@@ -5,6 +5,7 @@ mod metadata_tools;
 mod structs;
 mod tools;
 mod ziptool;
+mod repack;
 
 #[tokio::main]
 async fn main() {

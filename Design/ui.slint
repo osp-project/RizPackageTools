@@ -14,6 +14,20 @@ export component SearchingMetaDataTips inherits Rectangle {
     }
 }
 
+export component WritingAndPackingTips inherits Rectangle {
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #ffffffd5;
+    }
+    Text {
+        text: "正在写入global-metadata.dat并对修改后的包体进行打包，这可能需要几分钟，具体取决于您的电脑性能...";
+        y: 220px;
+        x: 210px;
+        font-size: 16px;
+    }
+}
+
 export component PackageSelectUIGroup inherits Rectangle {
     in-out property <string> package_selected_path <=> package_path.text;
     in-out property <bool> showSearchingTips: false;
@@ -68,6 +82,8 @@ export component PackageEditUIGroup inherits Rectangle {
     in-out property <string> server_host_text: "N/A";
     in-out property <string> game_config_address_text: "N/A";
     in-out property <string> xsolla_purchase_address_text: "N/A";
+
+    in-out property <bool> showPackingTips: false;
 
     callback output_package_click <=> output_package_btn.clicked;
     callback testbtn_logall_strings_click <=> testbtn_logall_strings.clicked;
@@ -212,6 +228,11 @@ export component PackageEditUIGroup inherits Rectangle {
         y: 380px;
         x: 720px;
     }
+
+    packing_package_tips_ui_group:=WritingAndPackingTips{
+        x: !showPackingTips ? 999999999px: 0px;
+        y: !showPackingTips ? 999999999px: 0px;
+    }
 }
 
 export component UIMainWindow inherits Window {
@@ -235,6 +256,7 @@ export component UIMainWindow inherits Window {
 
     in-out property <string> package_selected_path_text <=> package_select_ui_group.package_selected_path;
     in-out property <bool> showSearchingTips_PackageSelectUIGroup <=> package_select_ui_group.showSearchingTips;
+    in-out property <bool> showPackingTips_PackageEditUIGroup <=> package_edit_ui_group.showPackingTips;
 
     in-out property <string> about_versiontext_property: "v0.1.0   https://github.com/osp-project/RizPackageTools";
 

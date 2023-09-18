@@ -96,3 +96,12 @@ pub fn contains_string(v: &Vec<String>, s: String) -> bool {
     // 返回结果列表
     return false;
 }
+
+// 定义一个函数，接受一个Vec<String>和两个String作为参数
+pub fn replace_strings(vec: &mut Vec<String>, old: &str, new: &str) {
+    // 遍历Vec中的每个String
+    for s in vec.iter_mut() {
+        // 如果String包含old，就用new替换它
+        *s = s.replace(old, new);
+    }
+}

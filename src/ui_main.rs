@@ -1,8 +1,12 @@
 use native_dialog::FileDialog;
-use std::{path::Path, process::Command};
+use std::{path::Path, process::Command, vec};
 use tokio::time::{sleep, Duration};
 
 slint::include_modules!();
+
+pub static mut STRINGS_IN_METADATA: Vec<String> = vec![];
+pub static mut SELECTED_PACKAGE_METADATA_PATH_STR: &str = "";
+pub static mut SELECTED_PACKAGE_IS_ANDROID: bool = false;
 
 pub async fn init_ui() {
     log::info!("进行UI相关绑定");
@@ -58,7 +62,6 @@ pub async fn init_ui() {
 
             let selected_package_path_str = uimainwindow_weak.get_package_selected_path_text().to_string();
             let selected_package_extension = crate::tools::get_extension_from_filename(&selected_package_path_str.as_str()).unwrap();
-            let mut selected_package_metadata_path_str = "";
             let mut can_countine = false;
 
             if selected_package_extension != "ipa" &&  selected_package_extension != "apk"{
@@ -66,7 +69,8 @@ pub async fn init_ui() {
             }
             else if selected_package_extension == "ipa"{
                 crate::ziptool::depackzip(&selected_package_path_str, "cache/ipaUnZip").unwrap();
-                selected_package_metadata_path_str = "cache/ipaUnZip/Payload/Rizline.app/Data/Managed/Metadata/global-metadata.dat";
+                unsafe { SELECTED_PACKAGE_METADATA_PATH_STR = "cache/ipaUnZip/Payload/Rizline.app/Data/Managed/Metadata/global-metadata.dat";}
+                unsafe { SELECTED_PACKAGE_IS_ANDROID = true; }
                 can_countine = true;
             }
             else if selected_package_extension == "apk"{
@@ -92,11 +96,11 @@ pub async fn init_ui() {
                     cmd.args(["-jar", format!("{}/apktool.jar", currentdir).as_str(), "d", ("".to_string() + &selected_package_path_str.as_str() + "").as_str(), "-o", "cache/ApkDecoding", "-f"]);
                     let output = cmd.output().expect("Failed to execute command");
                     if output.status.success() {
-                        let output_str = String::from_utf8_lossy(&output.stderr).to_string();
+                        //let output_str = String::from_utf8_lossy(&output.stderr).to_string();
                         log::info!("状态success，尝试开始下一步");
                         log::info!("APK解包完毕");
                         can_countine = true;
-                        selected_package_metadata_path_str = "cache/ApkDecoding/assets/bin/Data/Managed/Metadata/global-metadata.dat";
+                        unsafe{ SELECTED_PACKAGE_METADATA_PATH_STR = "cache/ApkDecoding/assets/bin/Data/Managed/Metadata/global-metadata.dat"; }
                     } else {
                         let output_str = String::from_utf8_lossy(&output.stderr).to_string();
                         log::error!("在解包apk时遇到问题，控制台输出：{}", &output_str);
@@ -124,20 +128,22 @@ pub async fn init_ui() {
                         target_strings_json.rsa_public_key_target
                     ];
 
-                    let strings_test_meta = crate::metadata_tools::read_strings_from_file(selected_package_metadata_path_str);
+                    unsafe{
+                        STRINGS_IN_METADATA = crate::metadata_tools::read_strings_from_file(SELECTED_PACKAGE_METADATA_PATH_STR);
 
-                    std::fs::write("check_ok.cache", "ok").unwrap();
+                        std::fs::write("check_ok.cache", "ok").unwrap();
 
-                    for cont_str in &need_contains{
-                        if !(crate::metadata_tools::contains_string(&strings_test_meta, cont_str.to_string())){
-                            std::fs::remove_file("check_ok.cache").unwrap();
-                            std::fs::write("check_error.cache", "error: something not found").unwrap();
-                            log::warn!("对应项 {} 未能找到", &cont_str);
-                            let _ = msgbox::create("无法在metadata中找到对应项", ("无法在metadata中找到应有项 \"".to_string() + &cont_str + "\" 可能是target_strings.json的内容不正确或你正在使用过时版本的游戏包体，又或是游戏文件被加密").as_str(), msgbox::IconType::Error).unwrap();
-                            break;
-                        }
-                        else{
-                            log::info!("对应项 {} 已成功找到", &cont_str);
+                        for cont_str in &need_contains{
+                            if !(crate::metadata_tools::contains_string(&STRINGS_IN_METADATA, cont_str.to_string())){
+                                std::fs::remove_file("check_ok.cache").unwrap();
+                                std::fs::write("check_error.cache", "error: something not found").unwrap();
+                                log::warn!("对应项 {} 未能找到", &cont_str);
+                                let _ = msgbox::create("无法在metadata中找到对应项", ("无法在metadata中找到应有项 \"".to_string() + &cont_str + "\" 可能是target_strings.json的内容不正确或你正在使用过时版本的游戏包体，又或是游戏文件被加密").as_str(), msgbox::IconType::Error).unwrap();
+                                break;
+                            }
+                            else{
+                                log::info!("对应项 {} 已成功找到", &cont_str);
+                            }
                         }
                     }
                 };
@@ -147,6 +153,77 @@ pub async fn init_ui() {
                 log::info!("Metadata搜索线程已创建");
             }
         }
+    });
+
+    uimainwindow_weak = uimainwindow.as_weak().unwrap(); //Make it again
+
+    let uimainwindow_weak_box = Box::new(uimainwindow_weak);
+
+    let uimainwindow_weak_ptr = Box::leak(uimainwindow_weak_box);
+
+    let uimainwindow_weak_ptr = uimainwindow_weak_ptr as *mut UIMainWindow;
+    // 将裸指针转换为整数值
+    let uimainwindow_weak_addr = uimainwindow_weak_ptr as usize;
+
+    uimainwindow.on_output_package_click(move || {
+        let uimainwindow_weak_addr = uimainwindow_weak_ptr as usize;
+
+        let packing_thread_handle = async move {
+            unsafe{
+                let target_strings_json: crate::structs::TargetStrings = serde_json::from_str(
+                    std::fs::read_to_string("./target_strings.json")
+                        .unwrap()
+                        .as_str(),
+                )
+                .unwrap();
+
+                let uimainwindow_weak_slice = std::slice::from_raw_parts_mut(
+                    uimainwindow_weak_addr as *mut UIMainWindow,
+                    std::mem::size_of::<UIMainWindow>(),
+                );
+
+                let uimainwindow_weak_ptr = uimainwindow_weak_slice.as_mut_ptr();
+                let uimainwindow_weak_ref = uimainwindow_weak_ptr.as_mut().unwrap();
+
+                let origin_strings: Vec<String> = vec![
+                    target_strings_json.area_test_target,
+                    target_strings_json.area_verify_target,
+                    target_strings_json.aes256_key_target,
+                    target_strings_json.aes256_iv_target,
+                    target_strings_json.server_host_target,
+                    target_strings_json.game_config_address_target,
+                    target_strings_json.xsolla_purchase_address_target,
+                    target_strings_json.rsa_public_key_target,
+                ];
+
+                let replace_to_strings: Vec<String> = vec![
+                    uimainwindow_weak_ref.get_area_test_text().into(),
+                    uimainwindow_weak_ref.get_area_verify_text().into(),
+                    uimainwindow_weak_ref.get_aes256_key_text().into(),
+                    uimainwindow_weak_ref.get_aes256_iv_text().into(),
+                    uimainwindow_weak_ref.get_server_host_text().into(),
+                    uimainwindow_weak_ref.get_game_config_address_text().into(),
+                    uimainwindow_weak_ref.get_xsolla_purchase_address().into(),
+                    uimainwindow_weak_ref.get_rsa_public_key_text().into()
+                ];
+
+                log::info!("开始遍历替换STRINGS_IN_METADATA");
+
+                for i in 0..origin_strings.len() {
+                    log::info!("遍历到第{}项，origin_strings={}，replace_to_strings={}", &i, &origin_strings[i], &replace_to_strings[i]);
+                    crate::metadata_tools::replace_strings(&mut STRINGS_IN_METADATA, &origin_strings[i], &replace_to_strings[i]);
+                    crate::metadata_tools::write_strings_to_file(SELECTED_PACKAGE_METADATA_PATH_STR, STRINGS_IN_METADATA.to_owned());
+                }
+
+                crate::repack::repack_now(SELECTED_PACKAGE_IS_ANDROID.to_owned());
+
+                std::fs::write("pack_ok.cache", "ok").unwrap();
+            }
+        };
+
+        unsafe {uimainwindow_weak_ptr.as_mut().unwrap().set_showPackingTips_PackageEditUIGroup(true);}
+
+        tokio::spawn(packing_thread_handle);
     });
 
     uimainwindow.on_testbtn_logall_strings_click(move || {
@@ -159,16 +236,6 @@ pub async fn init_ui() {
     });
 
     log::info!("尝试进入循环检查");
-
-    uimainwindow_weak = uimainwindow.as_weak().unwrap();
-
-    let uimainwindow_weak_box = Box::new(uimainwindow_weak);
-
-    let uimainwindow_weak_ptr = Box::leak(uimainwindow_weak_box);
-
-    let uimainwindow_weak_ptr = uimainwindow_weak_ptr as *mut UIMainWindow;
-    // 将裸指针转换为整数值
-    let uimainwindow_weak_addr = uimainwindow_weak_ptr as usize;
 
     log::info!(
         "已获取UIMainWindow_Weak的内存地址：{}",
@@ -184,6 +251,8 @@ pub async fn init_ui() {
 }
 
 pub async fn loop_check_fn(uimainwindow_weak_addr: usize) {
+    let mut do_action_num = 0;
+
     // 使用 move 关键字
     log::info!("开始循环检查");
     loop {
@@ -194,6 +263,13 @@ pub async fn loop_check_fn(uimainwindow_weak_addr: usize) {
         }
         if (Path::new("check_ok.cache")).exists() && (Path::new("check_ok.cache")).is_file() {
             std::fs::remove_file("check_ok.cache").unwrap();
+            do_action_num = 0;
+            break;
+        }
+        if (Path::new("pack_ok.cache")).exists() && (Path::new("pack_ok.cache")).is_file() {
+            std::fs::remove_file("pack_ok.cache").unwrap();
+            msgbox::create("成功", "包体已经打包成功，并将打包后的包体放置在程序运行目录下，名称一般以Output_Package开头", msgbox::IconType::Info).unwrap();
+            do_action_num = 1;
             break;
         }
     }
@@ -214,23 +290,28 @@ pub async fn loop_check_fn(uimainwindow_weak_addr: usize) {
         uimainwindow_weak_ref.set_show_package_select_ui_group(false); // 使用引用
         uimainwindow_weak_ref.set_show_edit_package_ui_group(true);
 
-        let target_strings_json: crate::structs::TargetStrings = serde_json::from_str(
-            std::fs::read_to_string("./target_strings.json")
-                .unwrap()
-                .as_str(),
-        )
-        .unwrap();
+        if do_action_num == 0{
+            let target_strings_json: crate::structs::TargetStrings = serde_json::from_str(
+                std::fs::read_to_string("./target_strings.json")
+                    .unwrap()
+                    .as_str(),
+            )
+            .unwrap();
 
-        uimainwindow_weak_ref
-            .set_rsa_public_key_text(target_strings_json.rsa_public_key_target.into());
-        uimainwindow_weak_ref.set_area_test_text(target_strings_json.area_test_target.into());
-        uimainwindow_weak_ref.set_area_verify_text(target_strings_json.area_verify_target.into());
-        uimainwindow_weak_ref.set_aes256_key_text(target_strings_json.aes256_key_target.into());
-        uimainwindow_weak_ref.set_aes256_iv_text(target_strings_json.aes256_iv_target.into());
-        uimainwindow_weak_ref
-            .set_game_config_address_text(target_strings_json.game_config_address_target.into());
-        uimainwindow_weak_ref.set_server_host_text(target_strings_json.server_host_target.into());
-        uimainwindow_weak_ref
-            .set_xsolla_purchase_address(target_strings_json.xsolla_purchase_address_target.into());
+            uimainwindow_weak_ref
+                .set_rsa_public_key_text(target_strings_json.rsa_public_key_target.into());
+            uimainwindow_weak_ref.set_area_test_text(target_strings_json.area_test_target.into());
+            uimainwindow_weak_ref.set_area_verify_text(target_strings_json.area_verify_target.into());
+            uimainwindow_weak_ref.set_aes256_key_text(target_strings_json.aes256_key_target.into());
+            uimainwindow_weak_ref.set_aes256_iv_text(target_strings_json.aes256_iv_target.into());
+            uimainwindow_weak_ref
+                .set_game_config_address_text(target_strings_json.game_config_address_target.into());
+            uimainwindow_weak_ref.set_server_host_text(target_strings_json.server_host_target.into());
+            uimainwindow_weak_ref
+                .set_xsolla_purchase_address(target_strings_json.xsolla_purchase_address_target.into());
+        }
+        else if do_action_num == 1{
+            uimainwindow_weak_ref.set_showPackingTips_PackageEditUIGroup(false);
+        }
     }
 }

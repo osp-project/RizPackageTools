@@ -70,7 +70,6 @@ pub async fn init_ui() {
             else if selected_package_extension == "ipa"{
                 crate::ziptool::depackzip(&selected_package_path_str, "cache/ipaUnZip").unwrap();
                 unsafe { SELECTED_PACKAGE_METADATA_PATH_STR = "cache/ipaUnZip/Payload/Rizline.app/Data/Managed/Metadata/global-metadata.dat";}
-                unsafe { SELECTED_PACKAGE_IS_ANDROID = true; }
                 can_countine = true;
             }
             else if selected_package_extension == "apk"{
@@ -78,6 +77,8 @@ pub async fn init_ui() {
                     msgbox::create("Java错误", "在程序启动时我们已经提醒过您了，在未安装Java或未将Java添加到环境变量的情况下无法实现安卓包体相关功能，而你选择了一个apk文件，因此不可能继续往下进行操作。\n如果你已经安装了Java8或更高版本，却还是出现此报错，请尝试重启电脑。", msgbox::IconType::Error).unwrap();
                 }
                 else{
+                    unsafe { SELECTED_PACKAGE_IS_ANDROID = true; }
+
                     let mut currentdir = "".to_string();
 
                     match std::env::current_exe() {
@@ -130,6 +131,9 @@ pub async fn init_ui() {
 
                     unsafe{
                         STRINGS_IN_METADATA = crate::metadata_tools::read_strings_from_file(SELECTED_PACKAGE_METADATA_PATH_STR);
+
+                        //let s = format!("{:?}", &STRINGS_IN_METADATA);
+                        //log::info!("{}", s);
 
                         std::fs::write("check_ok.cache", "ok").unwrap();
 
@@ -212,9 +216,13 @@ pub async fn init_ui() {
                 for i in 0..origin_strings.len() {
                     log::info!("遍历到第{}项，origin_strings={}，replace_to_strings={}", &i, &origin_strings[i], &replace_to_strings[i]);
                     crate::metadata_tools::replace_strings(&mut STRINGS_IN_METADATA, &origin_strings[i], &replace_to_strings[i]);
-                    crate::metadata_tools::write_strings_to_file(SELECTED_PACKAGE_METADATA_PATH_STR, STRINGS_IN_METADATA.to_owned());
                 }
 
+                log::info!("文件路径：{}", &SELECTED_PACKAGE_METADATA_PATH_STR);
+
+                tokio::spawn(loop_check_fn(uimainwindow_weak_addr));
+
+                crate::metadata_tools::write_strings_to_file(SELECTED_PACKAGE_METADATA_PATH_STR, STRINGS_IN_METADATA.to_owned());
                 crate::repack::repack_now(SELECTED_PACKAGE_IS_ANDROID.to_owned());
 
                 std::fs::write("pack_ok.cache", "ok").unwrap();
@@ -259,6 +267,7 @@ pub async fn loop_check_fn(uimainwindow_weak_addr: usize) {
         sleep(Duration::from_millis(1000)).await;
         //log::info!("Try Check");
         if (Path::new("check_error.cache")).exists() && (Path::new("check_error.cache")).is_file() {
+            std::fs::remove_file("check_error.cache").unwrap();
             std::process::exit(114514);
         }
         if (Path::new("check_ok.cache")).exists() && (Path::new("check_ok.cache")).is_file() {

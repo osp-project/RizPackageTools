@@ -1,3 +1,6 @@
 /target
 /log
 /cache
+/build
+*.cache
+Output_Package_*

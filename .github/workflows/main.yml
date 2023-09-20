@@ -1,0 +1,28 @@
+# 定义actions的名称和触发条件
+name: Build (Windows)
+on: [push, pull_request]
+
+# 定义actions的工作流
+jobs:
+  # 定义一个工作流的名称和运行环境
+  build:
+    name: Build on Windows
+    runs-on: windows-latest
+    # 定义工作流的步骤
+    steps:
+      # 第一步：克隆仓库
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      # 第二步：运行install_env.bat
+      - name: Run install_env.bat
+        run: .\install_env.bat
+      # 第三步：运行build.bat
+      - name: Run build.bat
+        run: .\build.bat
+      # 第四步：将build/release文件夹中的riz_package_tools.exe文件上传
+      - name: Upload riz_package_tools.exe file
+        uses: actions/upload-artifact@v3
+        with:
+          name: riz_package_tools.exe
+          path: build\release\riz_package_tools.exe
+

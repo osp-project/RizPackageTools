@@ -1,3 +1,6 @@
+#![feature(allocator_api)]
+#![feature(vec_into_raw_parts)]
+
 mod log_manager;
 mod ui_main;
 mod android_check;

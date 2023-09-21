@@ -4,7 +4,13 @@
 # ⚠️⚠️⚠️警告：此项目仍在开发中，Bug和未知问题一堆，不做可用保证，请过一段时间再来吧
 
 ## 编译
-安装`rust`和`cargo`，然后运行`install_env.bat`再运行`build.bat`最后能在build文件夹下看到输出，当然你直接`cargo run`也不是不行
+1. 安装`rust`和`cargo`
+
+2. 切换到 `Nightly` 版编译器：`rustup default nightly`（必须，由于某些功能只允许在Nightly版编译器中启用）
+
+3. 然后运行`install_env.bat`再运行`build.bat`最后能在build文件夹下看到输出，当然你直接`cargo run`也不是不行
+
+如果要切换回stable编译器，使用 `rustup default stable`
 
 ## 配置要求
 |  配件名称   | 最低配置  | 推荐配置 |

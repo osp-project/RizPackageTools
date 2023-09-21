@@ -22,10 +22,14 @@ pub fn packzip(source_dir: &str, zip_file: &str) -> Result<(), zip::result::ZipE
         // 获取文件或目录的名称
         let name = path.strip_prefix(source_dir).unwrap();
 
+        let prefix = "";
+
         // 判断文件或目录的类型
         if path.is_file() {
+            let file_in_zip_name = prefix.to_owned().to_string() + name.to_string_lossy().to_string().as_str();
+            log::info!("将文件添加到压缩包中，压缩包中的文件名为：{}", file_in_zip_name);
             // 如果是文件，就添加到 ZIP 中
-            zip.start_file(name.to_string_lossy(), zip::write::FileOptions::default())?;
+            zip.start_file(file_in_zip_name, zip::write::FileOptions::default())?;
             let mut file = File::open(path)?;
             std::io::copy(&mut file, &mut zip)?;
         } else if name.as_os_str().len() != 0 {

@@ -3680,6 +3680,7 @@ name = "riz_package_tools"
 version = "0.1.0"
 dependencies = [
  "byteorder",
+ "lazy_static",
  "log",
  "log4rs",
  "msgbox",

@@ -18,6 +18,7 @@ tokio = { version = "1.32.0", features = ["full"] }
 zip = "0.6.6"
 walkdir = "2.4.0"
 byteorder = "1.4.3"
+lazy_static = "1.4.0"
 
 [build-dependencies]
 slint-build = "1.2.0"

@@ -1,12 +1,26 @@
 use native_dialog::FileDialog;
-use std::{path::Path, process::Command, vec};
+use std::{path::Path, process::Command, vec, fs::File, io::BufReader};
 use tokio::time::{sleep, Duration};
+use lazy_static::lazy_static;
+use std::sync::Mutex;
 
 slint::include_modules!();
 
 pub static mut STRINGS_IN_METADATA: Vec<String> = vec![];
 pub static mut SELECTED_PACKAGE_METADATA_PATH_STR: &str = "";
 pub static mut SELECTED_PACKAGE_IS_ANDROID: bool = false;
+lazy_static! {
+    pub static ref SELECTED_PACKAGE_METADATA_IMPL: Mutex<crate::metadata_tools::MetadataFile> = Mutex::new(crate::metadata_tools::MetadataFile{
+        reader: BufReader::new(File::create("cache.cache").unwrap()),
+        string_literal_offset: 0,
+        string_literal_count: 0,
+        data_info_position: 0,
+        string_literal_data_offset: 0,
+        string_literal_data_count: 0,
+        string_literals: Vec::new(),
+        str_bytes: Vec::new(),
+    });
+}
 
 pub async fn init_ui() {
     log::info!("进行UI相关绑定");
@@ -14,6 +28,7 @@ pub async fn init_ui() {
     let mut uimainwindow_weak = uimainwindow.as_weak().unwrap();
     uimainwindow.set_show_edit_package_ui_group(false);
     uimainwindow.set_show_package_select_ui_group(true);
+
     uimainwindow.on_select_package_btn_click(move || {
         let dialog = FileDialog::new().add_filter("ALL Supported Format", &["apk", "ipa"]);
         //.add_filter("Any file (Maybe can't work)", &["*"]);
@@ -117,6 +132,8 @@ pub async fn init_ui() {
             if can_countine {
                 let target_strings_json: crate::structs::TargetStrings = serde_json::from_str(std::fs::read_to_string("./target_strings.json").unwrap().as_str()).unwrap();
 
+                //unsafe {crate::metadata_tools::write_strings_to_file("./testpoint_0.dat", &mut SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap(), STRINGS_IN_METADATA.to_owned());}
+
                 let thread_handle = async {
                     let need_contains: Vec<String> = vec![
                         target_strings_json.area_test_target,
@@ -130,7 +147,9 @@ pub async fn init_ui() {
                     ];
 
                     unsafe{
-                        STRINGS_IN_METADATA = crate::metadata_tools::read_strings_from_file(SELECTED_PACKAGE_METADATA_PATH_STR);
+                        *SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap() = crate::metadata_tools::get_metadata_impl(SELECTED_PACKAGE_METADATA_PATH_STR);
+
+                        STRINGS_IN_METADATA = crate::metadata_tools::read_strings_from_file(&mut *SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap());
 
                         //let s = format!("{:?}", &STRINGS_IN_METADATA);
                         //log::info!("{}", s);
@@ -211,6 +230,8 @@ pub async fn init_ui() {
                     uimainwindow_weak_ref.get_rsa_public_key_text().into()
                 ];
 
+                crate::metadata_tools::write_strings_to_file("./testpoint_1.dat", &mut SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap(), STRINGS_IN_METADATA.to_owned());
+
                 log::info!("开始遍历替换STRINGS_IN_METADATA");
 
                 for i in 0..origin_strings.len() {
@@ -222,7 +243,8 @@ pub async fn init_ui() {
 
                 tokio::spawn(loop_check_fn(uimainwindow_weak_addr));
 
-                crate::metadata_tools::write_strings_to_file(SELECTED_PACKAGE_METADATA_PATH_STR, STRINGS_IN_METADATA.to_owned());
+                crate::metadata_tools::write_strings_to_file(SELECTED_PACKAGE_METADATA_PATH_STR, &mut SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap(), STRINGS_IN_METADATA.to_owned());
+                crate::metadata_tools::write_strings_to_file("./testpoint_2.dat", &mut SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap(), STRINGS_IN_METADATA.to_owned());
                 crate::repack::repack_now(SELECTED_PACKAGE_IS_ANDROID.to_owned());
 
                 std::fs::write("pack_ok.cache", "ok").unwrap();

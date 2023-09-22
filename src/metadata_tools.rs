@@ -3,21 +3,21 @@ use std::collections::VecDeque;
 use std::io::{BufReader, BufWriter, Read, Write, Seek};
 use std::fs::File;
 
-struct MetadataFile {
-    reader: BufReader<File>,
-    string_literal_offset: u32,
-    string_literal_count: u32,
-    data_info_position: u64,
-    string_literal_data_offset: u32,
-    string_literal_data_count: u32,
-    string_literals: Vec<StringLiteral>,
-    str_bytes: Vec<Vec<u8>>,
+pub struct MetadataFile {
+    pub(crate) reader: BufReader<File>,
+    pub(crate) string_literal_offset: u32,
+    pub(crate) string_literal_count: u32,
+    pub(crate) data_info_position: u64,
+    pub(crate) string_literal_data_offset: u32,
+    pub(crate) string_literal_data_count: u32,
+    pub(crate) string_literals: Vec<StringLiteral>,
+    pub(crate) str_bytes: Vec<Vec<u8>>,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-struct StringLiteral {
-    length: u32,
-    offset: u32,
+pub struct StringLiteral {
+    pub(crate) length: u32,
+    pub(crate) offset: u32,
 }
 
 impl MetadataFile {
@@ -127,7 +127,7 @@ impl MetadataFile {
         // 检查是否够空间放置
         if count > self.string_literal_data_count {
             // 检查数据区后面还有没有别的数据，没有就可以直接延长数据区
-            if self.string_literal_data_offset + self.string_literal_data_count < writer.get_ref().metadata().unwrap().len() as u32 {
+            if self.string_literal_data_offset + self.string_literal_data_count < writer.stream_position().unwrap() as u32 {
                 // 原有空间不够放，也不能直接延长，所以整体挪到文件尾
                 let mut reader_copy = self.reader.get_ref().try_clone().unwrap();
                 reader_copy.seek(std::io::SeekFrom::Start(
@@ -146,7 +146,7 @@ impl MetadataFile {
                 while let Some(byte) = queue.pop_front() {
                     writer.write_all(&[byte]).unwrap();
                 }
-                self.string_literal_data_offset = writer.get_ref().metadata().unwrap().len() as u32;
+                self.string_literal_data_offset = writer.stream_position().unwrap() as u32;
             }
         }
         self.string_literal_data_count = count;
@@ -177,21 +177,41 @@ impl MetadataFile {
     }
 }
 
-pub fn read_strings_from_file(file_name: &str) -> Vec<String> {
-    let file = MetadataFile::new(file_name);
-    let s: Vec<String> = file.unwrap().str_bytes.into_iter() // 获取一个迭代器
-    .map(|u| String::from_utf8(u).unwrap()) // 将每个Vec<u8, Global>转换为String，并使用unwrap获取结果
-    .collect(); // 收集转换后的String到一个新的Vec中
+pub fn get_metadata_impl(file_name: &str) -> MetadataFile {
+    // 创建一个MetadataFile对象，调用new方法打开文件
+    let mut metadata_file = MetadataFile::new(file_name).unwrap();
 
-    s
+    metadata_file
 }
 
-pub fn write_strings_to_file(file_name: &str, strings: Vec<String>) {
-    unsafe{
-        let mut file = MetadataFile::new(file_name).unwrap();
-        file.str_bytes = convert_vecstring_to_vecglobalvecu8global(strings);
-        file.write_to_new_file(file_name);
+// 从文件中读取字符串，返回一个字符串向量
+pub fn read_strings_from_file(metadata_file: &mut MetadataFile) -> Vec<String> {
+    // 创建一个空的字符串向量
+    let mut strings = Vec::new();
+    // 遍历元数据文件中的字符串字节向量
+    for str_bytes in &metadata_file.str_bytes {
+        // 将字节向量转换为字符串，如果转换失败，返回错误信息
+        let string = String::from_utf8(str_bytes.to_vec()).unwrap_or_else(|e| format!("Invalid UTF-8 sequence: {}", e));
+        // 将字符串添加到字符串向量中
+        strings.push(string);
     }
+
+    // 返回字符串向量
+    return strings;
+}
+
+// 将字符串向量写入文件
+pub fn write_strings_to_file(file_name: &str, metadata_file: &mut MetadataFile ,strings: Vec<String>) {
+
+    metadata_file.str_bytes.clear();
+
+    for string in &strings {
+        // 将字符串转换为字节向量，如果转换失败，返回错误信息
+        let str_bytes = string.to_owned().into_bytes();
+        metadata_file.str_bytes.push(str_bytes);
+    }
+
+    metadata_file.write_to_new_file(file_name);
 }
 
 

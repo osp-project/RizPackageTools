@@ -1,5 +1,7 @@
 #![feature(allocator_api)]
 #![feature(vec_into_raw_parts)]
+#![feature(file_create_new)]
+#![feature(const_trait_impl)]
 
 mod log_manager;
 mod ui_main;

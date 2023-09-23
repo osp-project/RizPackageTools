@@ -230,7 +230,8 @@ pub async fn init_ui() {
                     uimainwindow_weak_ref.get_rsa_public_key_text().into()
                 ];
 
-                crate::metadata_tools::write_strings_to_file("./testpoint_1.dat", &mut SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap(), STRINGS_IN_METADATA.to_owned());
+                let s = format!("{:?}", &STRINGS_IN_METADATA);
+                log::info!("遍历替换前：{}", s);
 
                 log::info!("开始遍历替换STRINGS_IN_METADATA");
 
@@ -239,12 +240,15 @@ pub async fn init_ui() {
                     crate::metadata_tools::replace_strings(&mut STRINGS_IN_METADATA, &origin_strings[i], &replace_to_strings[i]);
                 }
 
+                let s = format!("{:?}", &STRINGS_IN_METADATA);
+                log::info!("遍历替换后：{}", s);
+
                 log::info!("文件路径：{}", &SELECTED_PACKAGE_METADATA_PATH_STR);
 
                 tokio::spawn(loop_check_fn(uimainwindow_weak_addr));
 
-                crate::metadata_tools::write_strings_to_file(SELECTED_PACKAGE_METADATA_PATH_STR, &mut SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap(), STRINGS_IN_METADATA.to_owned());
-                crate::metadata_tools::write_strings_to_file("./testpoint_2.dat", &mut SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap(), STRINGS_IN_METADATA.to_owned());
+                crate::metadata_tools::write_strings_to_file("output_metadata.dat", &mut SELECTED_PACKAGE_METADATA_IMPL.lock().unwrap(), STRINGS_IN_METADATA.to_owned());
+                std::fs::copy("output_metadata.dat", SELECTED_PACKAGE_METADATA_PATH_STR).unwrap();
                 crate::repack::repack_now(SELECTED_PACKAGE_IS_ANDROID.to_owned());
 
                 std::fs::write("pack_ok.cache", "ok").unwrap();

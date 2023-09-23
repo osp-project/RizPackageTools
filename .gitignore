@@ -4,3 +4,4 @@
 /build
 *.cache
 Output_Package_*
+output_*

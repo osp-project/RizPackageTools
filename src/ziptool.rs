@@ -1,44 +1,41 @@
 use std::fs::File;
-use std::io::{BufReader, BufWriter};
+use std::io::{BufReader, BufWriter, Read, Write};
+use zip::write::FileOptions;
 use zip::{ZipArchive, ZipWriter};
 
-// 定义一个函数用于压缩一个目录中的所有文件和子目录
-pub fn packzip(source_dir: &str, zip_file: &str) -> Result<(), zip::result::ZipError> {
-    // 打开 ZIP 文件并创建一个缓冲写入器
-    let file = File::create(zip_file)?;
-    let writer = BufWriter::new(file);
-
-    // 从写入器中创建一个 ZIP 写入对象
-    let mut zip = ZipWriter::new(writer);
-
-    // 遍历源目录中的所有文件和子目录
-    for entry in walkdir::WalkDir::new(source_dir) {
-        // 获取目录项
-        let entry = entry.unwrap();
-
-        // 获取文件或目录的路径
-        let path = entry.path();
-
-        // 获取文件或目录的名称
-        let name = path.strip_prefix(source_dir).unwrap();
-
-        let prefix = "";
-
-        // 判断文件或目录的类型
-        if path.is_file() {
-            let file_in_zip_name = prefix.to_owned().to_string() + name.to_string_lossy().to_string().as_str();
-            log::info!("将文件添加到压缩包中，压缩包中的文件名为：{}", file_in_zip_name);
-            // 如果是文件，就添加到 ZIP 中
-            zip.start_file(file_in_zip_name, zip::write::FileOptions::default())?;
+// 定义一个函数，接受一个路径参数，返回一个Result类型
+pub fn packzip(path: &str, output_filename: &str) -> Result<(), Box<dyn std::error::Error>> {
+    // 创建一个文件对象，以写入和更新模式打开
+    let file = File::create(format!("{}", output_filename))?;
+    // 创建一个ZipWriter对象，包装文件对象
+    let mut zip = ZipWriter::new(file);
+    // 定义一个递归函数，用于遍历目录下的所有文件和子目录，并添加到zip中
+    fn add_to_zip(zip: &mut ZipWriter<File>, base: &str, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        // 获取路径对应的元数据
+        let metadata = std::fs::metadata(path)?;
+        // 如果是目录，则遍历其下的所有条目，并递归调用自身
+        if metadata.is_dir() {
+            for entry in std::fs::read_dir(path)? {
+                let entry = entry?;
+                let path = entry.path();
+                let name = path.to_str().unwrap();
+                add_to_zip(zip, base, name)?;
+            }
+        } else {
+            // 如果是文件，则创建一个相对于基础路径的名称，并添加到zip中
+            let name = path.strip_prefix(base).unwrap();
+            zip.start_file(name.to_string(), FileOptions::default())?;
+            // 读取文件内容，并写入到zip中
             let mut file = File::open(path)?;
-            std::io::copy(&mut file, &mut zip)?;
-        } else if name.as_os_str().len() != 0 {
-            // 如果是目录，就添加到 ZIP 中
-            zip.add_directory(name.to_string_lossy(), zip::write::FileOptions::default())?;
+            let mut buffer = Vec::new();
+            file.read_to_end(&mut buffer)?;
+            zip.write_all(&buffer)?;
         }
+        Ok(())
     }
-
-    // 结束 ZIP 写入并返回结果
+    // 调用递归函数，传入zip对象，基础路径和目标路径
+    add_to_zip(&mut zip, path, path)?;
+    // 完成zip写入操作，并返回结果
     zip.finish()?;
     Ok(())
 }

@@ -303,7 +303,7 @@ pub async fn loop_check_fn(uimainwindow_weak_addr: usize) {
         }
         if (Path::new("pack_ok.cache")).exists() && (Path::new("pack_ok.cache")).is_file() {
             std::fs::remove_file("pack_ok.cache").unwrap();
-            msgbox::create("成功", "包体已经打包成功，并将打包后的包体放置在程序运行目录下，名称一般以Output_Package开头", msgbox::IconType::Info).unwrap();
+            msgbox::create("成功", "包体已经打包成功，并将打包后的包体放置在程序运行目录下，名称一般以Output_Package开头\n如果是安卓包，记得先自行完成签名操作，否则将无法安装！", msgbox::IconType::Info).unwrap();
             do_action_num = 1;
             break;
         }

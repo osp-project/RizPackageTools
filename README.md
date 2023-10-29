@@ -1,6 +1,12 @@
 # RizPackageTools
 针对某款竖屏音乐游戏的改包工具
 
+## 使用
+1. 从[Releases](/Releases)页下载最新的编译后版本
+2. 从[这里](https://github.com/osp-project/RizPackageTools/blob/master/target_strings.json)下载`target_settings.json`或自己编写
+3. 将`target_settings.json`放置到RizPackageTools的二进制文件运行目录下以便其读取
+4. Enjoy it!
+
 ## 编译
 1. 安装`rust`和`cargo`
 
